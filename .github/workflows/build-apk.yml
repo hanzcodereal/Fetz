@@ -1,0 +1,59 @@
+name: Build APK Release
+
+# Dijalankan MANUAL saja: tab Actions > "Build APK Release" > Run workflow
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Install Android NDK
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "ndk;28.2.13676358" || true
+
+      - name: Install dependencies
+        run: npm ci || npm install
+
+      - name: Sync Capacitor Android
+        run: npx cap sync android
+
+      - name: Generate release keystore
+        run: |
+          keytool -genkeypair -v \
+            -keystore android/app/release.keystore \
+            -storepass android123 -keypass android123 \
+            -alias fetz -keyalg RSA -keysize 2048 -validity 10000 \
+            -dname "CN=Hanz Dev Official, O=Hanz Dev Official, C=ID"
+
+      - name: Build release APK
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleRelease --no-daemon
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Fetz-v1.0.0-APK
+          path: android/app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
