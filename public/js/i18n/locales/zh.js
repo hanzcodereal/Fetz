@@ -328,7 +328,7 @@ export default {
   "tool-wachannel-subtitle": "通过频道链接获取信息",
   "tool-alight-desc": "从 TikTok 视频链接中查找 Alight Motion 预设链接（5mb 和 XML）",
   "tool-alight-subtitle": "通过 TikTok 链接查找预设",
-  "placeholder-alight-tiktok": "https://www.tiktok.com/@user/video/...",
+  "placeholder-alight-tiktok": "https://vt.tiktok.com/xxxx",
   "btn-alight-find": "查找预设",
   "alight-loading-find": "正在扫描简介、主页和评论...",
   "alight-failed-find": "查找预设失败",
