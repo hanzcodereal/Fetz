@@ -32,6 +32,20 @@ import { renderHistory } from "../ui.js";
 import { safeSetHistory } from "./history.js";
 import { onHistoryItemClick, onHistoryDeleteClick } from "./history.js";
 
+// Auto-paste (silent) hanya boleh menempel jika isi clipboard murni satu link http(s).
+function isCleanUrl(text) {
+  if (!text || /\s/.test(text)) return false;
+  try {
+    const u = new URL(text);
+    return (
+      (u.protocol === "http:" || u.protocol === "https:") &&
+      u.hostname.includes(".")
+    );
+  } catch (_) {
+    return false;
+  }
+}
+
 export async function handlePasteFromClipboard(isSilent = false) {
   try {
     let text = "";
@@ -48,6 +62,7 @@ export async function handlePasteFromClipboard(isSilent = false) {
 
     if (text && text.trim()) {
       const trimmed = text.trim();
+      if (isSilent && !isCleanUrl(trimmed)) return;
       const isUrl =
         trimmed.startsWith("http") ||
         trimmed.includes(".com") ||
