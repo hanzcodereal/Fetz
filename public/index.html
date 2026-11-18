@@ -739,6 +739,38 @@
                 </div>
               </div>
 
+              <!-- Card: Preset Finder -->
+              <div class="tool-card" data-tool="alight">
+                <div class="tool-card-icon">
+                  <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M18 4l2 4h-3l-2-4h-2l2 4h-3l-2-4H8l2 4H7L5 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V4h-4z"/></svg>
+                </div>
+                <div class="tool-card-info">
+                  <div class="tool-card-title-row">
+                    <h3 class="tool-card-title" data-i18n="tool-alight-title">Preset Finder</h3>
+                  </div>
+                  <p class="tool-card-desc" data-i18n="tool-alight-desc">Browse & download Alight Motion preset XML from catalog, link, or Google Drive</p>
+                </div>
+                <div class="tool-card-chevron">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
+                </div>
+              </div>
+
+              <!-- Card: Info Channel WhatsApp -->
+              <div class="tool-card" data-tool="wachannel">
+                <div class="tool-card-icon">
+                  <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M18 11v2h4v-2h-4zm-2 6.61c.96.71 2.21 1.65 3.2 2.39.4-.53.8-1.07 1.2-1.6-.99-.74-2.24-1.68-3.2-2.4-.4.54-.8 1.08-1.2 1.61zM20.4 5.6c-.4-.53-.8-1.07-1.2-1.6-.99.74-2.24 1.68-3.2 2.4.4.53.8 1.07 1.2 1.6.96-.72 2.21-1.65 3.2-2.4zM4 9c-1.1 0-2 .9-2 2v2c0 1.1.9 2 2 2h1v4h2v-4h1l5 3V6L8 9H4zm11.5 3c0-1.33-.58-2.53-1.5-3.35v6.69c.92-.81 1.5-2.01 1.5-3.34z"/></svg>
+                </div>
+                <div class="tool-card-info">
+                  <div class="tool-card-title-row">
+                    <h3 class="tool-card-title" data-i18n="tool-wachannel-title">Info Channel WhatsApp</h3>
+                  </div>
+                  <p class="tool-card-desc" data-i18n="tool-wachannel-desc">View name, bio, followers & avatar of a WhatsApp channel from its link</p>
+                </div>
+                <div class="tool-card-chevron">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
+                </div>
+              </div>
+
               <!-- Card 8: SFLGL Skipper -->
               <div class="tool-card" data-tool="sflgl">
                 <div class="tool-card-icon">
@@ -805,6 +837,117 @@
             </div>
 
             <div id="snifferResults"></div>
+          </div>
+
+          <!-- Sub-View: Alight Presets -->
+          <div id="toolAlightView" class="tool-sub-view hidden">
+            <div class="tool-view-header">
+              <button class="tool-view-back-btn" aria-label="Back">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+              </button>
+              <div class="tool-view-titles">
+                <h3 data-i18n="tool-alight-title">Preset Finder</h3>
+                <p data-i18n="tool-alight-subtitle">Catalog, Alight link & Google Drive</p>
+              </div>
+            </div>
+
+            <div class="tool-config-group">
+              <div class="tool-chip-group" id="alightTabChips">
+                <button type="button" class="tool-chip active" data-tab="catalog" data-i18n="alight-tab-catalog">Catalog</button>
+                <button type="button" class="tool-chip" data-tab="link" data-i18n="alight-tab-link">Alight Link</button>
+                <button type="button" class="tool-chip" data-tab="drive" data-i18n="alight-tab-drive">Google Drive</button>
+              </div>
+            </div>
+
+            <div id="alightPanelCatalog" class="alight-panel">
+              <div class="tool-input-section">
+                <div class="tool-input-wrapper">
+                  <input type="text" id="alightSearchInput" placeholder="Search presets, audio, or images" data-i18n-placeholder="placeholder-alight-search" autocomplete="off" />
+                </div>
+              </div>
+              <div id="alightCatalogLoader" class="tool-loader-card hidden">
+                <div class="tool-spinner"></div>
+                <span data-i18n="alight-loading-catalog">Loading catalog...</span>
+              </div>
+              <div id="alightCatalogList"></div>
+            </div>
+
+            <div id="alightPanelLink" class="alight-panel hidden">
+            <div class="tool-input-section">
+              <div class="tool-input-wrapper">
+                <span class="tool-input-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/></svg></span>
+                <input type="text" id="alightLinkInput" placeholder="https://alight.link/..." data-i18n-placeholder="placeholder-alight-link" autocomplete="off" />
+                <button type="button" id="alightLinkPasteBtn" class="tool-input-action-btn" title="Paste" aria-label="Paste">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M19 2h-4.18C14.4.84 13.3 0 12 0S9.6.84 9.18 2H5c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm7 18H5V4h2v3h10V4h2v16z"/></svg>
+                </button>
+              </div>
+              <button type="button" id="alightLinkRunBtn" class="tool-execute-btn" data-i18n="btn-alight-fetch">
+                <span>Get Preset</span>
+              </button>
+            </div>
+
+            <div id="alightLinkLoader" class="tool-loader-card hidden">
+              <div class="tool-spinner"></div>
+              <span data-i18n="alight-loading-preset">Fetching preset...</span>
+            </div>
+
+            <div id="alightLinkResult"></div>
+            </div>
+
+            <div id="alightPanelDrive" class="alight-panel hidden">
+            <div class="tool-input-section">
+              <div class="tool-input-wrapper">
+                <span class="tool-input-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/></svg></span>
+                <input type="text" id="alightDriveInput" placeholder="https://drive.google.com/file/d/.../view" data-i18n-placeholder="placeholder-alight-drive" autocomplete="off" />
+                <button type="button" id="alightDrivePasteBtn" class="tool-input-action-btn" title="Paste" aria-label="Paste">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M19 2h-4.18C14.4.84 13.3 0 12 0S9.6.84 9.18 2H5c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm7 18H5V4h2v3h10V4h2v16z"/></svg>
+                </button>
+              </div>
+              <button type="button" id="alightDriveRunBtn" class="tool-execute-btn" data-i18n="btn-alight-fetch">
+                <span>Get Preset</span>
+              </button>
+            </div>
+
+            <div id="alightDriveLoader" class="tool-loader-card hidden">
+              <div class="tool-spinner"></div>
+              <span data-i18n="alight-loading-preset">Fetching preset...</span>
+            </div>
+
+            <div id="alightDriveResult"></div>
+            </div>
+          </div>
+
+          <!-- Sub-View: WhatsApp Channel Info -->
+          <div id="toolWachannelView" class="tool-sub-view hidden">
+            <div class="tool-view-header">
+              <button class="tool-view-back-btn" aria-label="Back">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+              </button>
+              <div class="tool-view-titles">
+                <h3 data-i18n="tool-wachannel-title">Info Channel WhatsApp</h3>
+                <p data-i18n="tool-wachannel-subtitle">Get channel info from its link</p>
+              </div>
+            </div>
+
+            <div class="tool-input-section">
+              <div class="tool-input-wrapper">
+                <span class="tool-input-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M3.9 12c0-1.71 1.39-3.1 3.1-3.1h4V7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h4v-1.9H7c-1.71 0-3.1-1.39-3.1-3.1zM8 13h8v-2H8v2zm9-6h-4v1.9h4c1.71 0 3.1 1.39 3.1 3.1s-1.39 3.1-3.1 3.1h-4V17h4c2.76 0 5-2.24 5-5s-2.24-5-5-5z"/></svg></span>
+                <input type="text" id="waChannelInput" placeholder="https://www.whatsapp.com/channel/..." data-i18n-placeholder="placeholder-wachannel" autocomplete="off" />
+                <button type="button" id="waChannelPasteBtn" class="tool-input-action-btn" title="Paste" aria-label="Paste">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M19 2h-4.18C14.4.84 13.3 0 12 0S9.6.84 9.18 2H5c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm7 18H5V4h2v3h10V4h2v16z"/></svg>
+                </button>
+              </div>
+              <button type="button" id="waChannelRunBtn" class="tool-execute-btn" data-i18n="btn-wachannel-run">
+                <span>Get Info</span>
+              </button>
+            </div>
+
+            <div id="waChannelLoader" class="tool-loader-card hidden">
+              <div class="tool-spinner"></div>
+              <span data-i18n="wachannel-loading">Reading channel info...</span>
+            </div>
+
+            <div id="waChannelResult"></div>
           </div>
 
           <!-- Sub-View 2: SFLGL View -->
