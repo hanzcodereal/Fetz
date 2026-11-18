@@ -755,6 +755,38 @@
                 </div>
               </div>
 
+              <!-- Card: Earthquake Info -->
+              <div class="tool-card" data-tool="gempa">
+                <div class="tool-card-icon">
+                  <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>
+                </div>
+                <div class="tool-card-info">
+                  <div class="tool-card-title-row">
+                    <h3 class="tool-card-title" data-i18n="tool-gempa-title">Earthquake Info</h3>
+                  </div>
+                  <p class="tool-card-desc" data-i18n="tool-gempa-desc">Latest earthquakes from BMKG: newest, M5.0+, and felt</p>
+                </div>
+                <div class="tool-card-chevron">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
+                </div>
+              </div>
+
+              <!-- Card: Temp Mail -->
+              <div class="tool-card" data-tool="tempmail">
+                <div class="tool-card-icon">
+                  <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+                </div>
+                <div class="tool-card-info">
+                  <div class="tool-card-title-row">
+                    <h3 class="tool-card-title" data-i18n="tool-tempmail-title">Temp Mail</h3>
+                  </div>
+                  <p class="tool-card-desc" data-i18n="tool-tempmail-desc">Disposable email address with a live inbox</p>
+                </div>
+                <div class="tool-card-chevron">
+                  <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/></svg>
+                </div>
+              </div>
+
               <!-- Card: Info Channel WhatsApp -->
               <div class="tool-card" data-tool="wachannel">
                 <div class="tool-card-icon">
@@ -870,6 +902,67 @@
             </div>
 
             <div id="alightTiktokResult"></div>
+          </div>
+
+          <!-- Sub-View: Cek Gempa -->
+          <div id="toolGempaView" class="tool-sub-view hidden">
+            <div class="tool-view-header">
+              <button class="tool-view-back-btn" aria-label="Back">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+              </button>
+              <div class="tool-view-titles">
+                <h3 data-i18n="tool-gempa-title">Earthquake Info</h3>
+                <p data-i18n="tool-gempa-subtitle">Latest data from BMKG</p>
+              </div>
+            </div>
+
+            <div class="sniffer-filter-chips" id="gempaChips">
+              <button type="button" class="sniffer-filter-chip active" data-kind="auto" data-i18n="gempa-tab-latest">Latest</button>
+              <button type="button" class="sniffer-filter-chip" data-kind="terkini" data-i18n="gempa-tab-m5">M5.0+</button>
+              <button type="button" class="sniffer-filter-chip" data-kind="dirasakan" data-i18n="gempa-tab-felt">Felt</button>
+            </div>
+            <button type="button" id="gempaRefreshBtn" class="tool-execute-btn" data-i18n="btn-gempa-refresh"><span>Refresh</span></button>
+
+            <div id="gempaLoader" class="tool-loader-card hidden">
+              <div class="tool-spinner"></div>
+              <span data-i18n="gempa-loading">Loading earthquake data...</span>
+            </div>
+            <div id="gempaResult"></div>
+          </div>
+
+          <!-- Sub-View: Temp Mail -->
+          <div id="toolTempmailView" class="tool-sub-view hidden">
+            <div class="tool-view-header">
+              <button class="tool-view-back-btn" aria-label="Back">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+              </button>
+              <div class="tool-view-titles">
+                <h3 data-i18n="tool-tempmail-title">Temp Mail</h3>
+                <p data-i18n="tool-tempmail-subtitle">Disposable email with a live inbox</p>
+              </div>
+            </div>
+
+            <div id="tmAddress"></div>
+
+            <div class="tool-input-section">
+              <div class="tool-input-wrapper">
+                <input type="text" id="tmUsername" placeholder="Name (optional)" data-i18n-placeholder="placeholder-tm-username" autocomplete="off" autocapitalize="off" />
+              </div>
+              <select id="tmDomain" aria-label="Domain" style="width:100%;padding:12px;border-radius:12px;border:1px solid var(--border-color);background:var(--surface);color:inherit;font:inherit"></select>
+              <button type="button" id="tmCreateBtn" class="tool-execute-btn" data-i18n="btn-tm-create"><span>Create Email</span></button>
+            </div>
+
+            <div id="tmActions" class="alight-result-actions hidden">
+              <button type="button" id="tmRefreshBtn" class="tool-btn-secondary"><span data-i18n="btn-tm-refresh">Refresh</span></button>
+              <button type="button" id="tmDeleteBtn" class="tool-btn-secondary"><span data-i18n="btn-tm-delete">Delete Inbox</span></button>
+            </div>
+
+            <div id="tmLoader" class="tool-loader-card hidden">
+              <div class="tool-spinner"></div>
+              <span data-i18n="tm-loading">Loading inbox...</span>
+            </div>
+            <div id="tmList"></div>
+            <div id="tmViewer"></div>
           </div>
 
           <!-- Sub-View: WhatsApp Channel Info -->
@@ -4148,7 +4241,7 @@
                   <span data-i18n="label-version">Version</span>
                 </div>
                 <div class="update-info">
-                  <span class="info-val" id="appVersionVal">&nbsp;4.6.0</span>
+                  <span class="info-val" id="appVersionVal">&nbsp;2.0.0</span>
                   <span class="action-label" data-i18n="btn-check">CHECK</span>
                 </div>
               </div>
