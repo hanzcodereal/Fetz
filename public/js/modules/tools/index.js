@@ -23,6 +23,7 @@ import {
 import { saveBlobToFetz } from "./storageHelper.js";
 import { findPresetsFromTiktok } from "./alightPresets.js";
 import { scrapeWhatsAppChannel } from "./waChannel.js";
+import { initGempaController, initTempMailController } from "./gempaMailUi.js";
 
 let activeToolSubView = null;
 const toolCleanups = [];
@@ -167,6 +168,8 @@ export function initTools() {
   initUsernameCheckerController();
   initAlightController();
   initWaChannelController();
+  initGempaController();
+  initTempMailController();
 }
 
 function capitalize(s) {
