@@ -343,7 +343,7 @@
   "tool-wachannel-subtitle": "チャンネルのリンクから情報を取得",
   "tool-alight-desc": "TikTok動画のリンクからAlight Motionのプリセットリンク（5mb・XML）を探します",
   "tool-alight-subtitle": "TikTokリンクからプリセットを探す",
-  "placeholder-alight-tiktok": "https://www.tiktok.com/@user/video/...",
+  "placeholder-alight-tiktok": "https://vt.tiktok.com/xxxx",
   "btn-alight-find": "プリセットを探す",
   "alight-loading-find": "説明・プロフィール・コメントをスキャン中...",
   "alight-failed-find": "プリセットを探せませんでした",
