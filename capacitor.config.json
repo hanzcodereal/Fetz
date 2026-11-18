@@ -1,0 +1,13 @@
+{
+  "appId": "id.hanzdev.fetz",
+  "appName": "Fetz",
+  "webDir": "public",
+  "plugins": {
+    "CapacitorHttp": {
+      "enabled": true
+    },
+    "CapacitorCookies": {
+      "enabled": true
+    }
+  }
+}
