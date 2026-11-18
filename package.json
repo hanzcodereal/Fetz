@@ -1,6 +1,6 @@
 {
   "name": "fetz",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Fetz - media downloader for Android",
   "main": "index.js",
   "scripts": {
