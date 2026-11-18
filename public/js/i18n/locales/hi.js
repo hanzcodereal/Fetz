@@ -324,7 +324,7 @@ export default {
   "tool-wachannel-subtitle": "चैनल लिंक से जानकारी पाएँ",
   "tool-alight-desc": "TikTok वीडियो लिंक से Alight Motion प्रीसेट लिंक (5mb और XML) खोजें",
   "tool-alight-subtitle": "TikTok लिंक से प्रीसेट खोजें",
-  "placeholder-alight-tiktok": "https://www.tiktok.com/@user/video/...",
+  "placeholder-alight-tiktok": "https://vt.tiktok.com/xxxx",
   "btn-alight-find": "प्रीसेट खोजें",
   "alight-loading-find": "विवरण, बायो और कमेंट स्कैन हो रहे हैं...",
   "alight-failed-find": "प्रीसेट नहीं मिल सके",
