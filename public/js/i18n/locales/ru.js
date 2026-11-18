@@ -324,7 +324,7 @@ export default {
   "tool-wachannel-subtitle": "Получите информацию о канале по его ссылке",
   "tool-alight-desc": "Поиск ссылок на пресеты Alight Motion (5mb и XML) по ссылке на видео TikTok",
   "tool-alight-subtitle": "Поиск пресетов по ссылке TikTok",
-  "placeholder-alight-tiktok": "https://www.tiktok.com/@user/video/...",
+  "placeholder-alight-tiktok": "https://vt.tiktok.com/xxxx",
   "btn-alight-find": "Найти пресеты",
   "alight-loading-find": "Сканирование описания, профиля и комментариев...",
   "alight-failed-find": "Не удалось найти пресеты",
