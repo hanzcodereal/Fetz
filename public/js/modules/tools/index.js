@@ -21,12 +21,7 @@ import {
   toDomainLabel,
 } from "./usernameChecker.js";
 import { saveBlobToFetz } from "./storageHelper.js";
-import {
-  listAlightCatalog,
-  resolveAlightLink,
-  fetchAlightDrivePreset,
-  downloadAlightFile,
-} from "./alightPresets.js";
+import { findPresetsFromTiktok } from "./alightPresets.js";
 import { scrapeWhatsAppChannel } from "./waChannel.js";
 
 let activeToolSubView = null;
@@ -1738,167 +1733,24 @@ function bindPasteButton(input, pasteBtn) {
   });
 }
 
+const ALIGHT_SOURCE_KEYS = {
+  description: "alight-source-description",
+  bio: "alight-source-bio",
+  bioLink: "alight-source-biolink",
+  comment: "alight-source-comment",
+  reply: "alight-source-reply",
+};
+
 function initAlightController() {
-  const chips = document.querySelectorAll("#alightTabChips .tool-chip");
-  const panels = {
-    catalog: document.getElementById("alightPanelCatalog"),
-    link: document.getElementById("alightPanelLink"),
-    drive: document.getElementById("alightPanelDrive"),
-  };
-  const searchInput = document.getElementById("alightSearchInput");
-  const catalogLoader = document.getElementById("alightCatalogLoader");
-  const catalogList = document.getElementById("alightCatalogList");
-
-  let catalog = null;
-  let catalogLoading = false;
-  const MAX_ROWS = 150;
-
-  function switchTab(tab) {
-    chips.forEach((c) =>
-      c.classList.toggle("active", c.getAttribute("data-tab") === tab),
-    );
-    Object.entries(panels).forEach(([key, el]) =>
-      el?.classList.toggle("hidden", key !== tab),
-    );
-    if (tab === "catalog" && !catalog) loadCatalog();
-  }
-
-  chips.forEach((chip) => {
-    chip.addEventListener("click", () => {
-      triggerHaptic("light");
-      switchTab(chip.getAttribute("data-tab") || "catalog");
-    });
-  });
-
-  document
-    .querySelector('.tool-card[data-tool="alight"]')
-    ?.addEventListener("click", () => {
-      if (!catalog) loadCatalog();
-    });
-
-  async function loadCatalog() {
-    if (catalogLoading) return;
-    catalogLoading = true;
-    catalogLoader?.classList.remove("hidden");
-    if (catalogList) catalogList.innerHTML = "";
-    try {
-      catalog = await listAlightCatalog();
-      renderCatalog();
-    } catch (err) {
-      catalog = null;
-      if (catalogList) {
-        catalogList.innerHTML =
-          errorCardHtml(err.message || t("alight-failed-catalog")) +
-          `<button type="button" id="alightRetryBtn" class="tool-btn-secondary" style="margin-top:10px">${esc(t("alight-retry"))}</button>`;
-        document
-          .getElementById("alightRetryBtn")
-          ?.addEventListener("click", loadCatalog);
-      }
-    } finally {
-      catalogLoading = false;
-      catalogLoader?.classList.add("hidden");
-    }
-  }
-
-  function renderCatalog() {
-    if (!catalog || !catalogList) return;
-    const q = (searchInput?.value || "").trim().toLowerCase();
-    const filter = (items) =>
-      q ? items.filter((i) => i.name.toLowerCase().includes(q)) : items;
-    const groups = [
-      [t("alight-group-presets"), filter(catalog.presets)],
-      [t("alight-group-audio"), filter(catalog.audio)],
-      [t("alight-group-images"), filter(catalog.images)],
-    ];
-
-    if (groups.every(([, items]) => items.length === 0)) {
-      catalogList.innerHTML = `<div class="tool-empty-box"><p>${esc(
-        q ? t("alight-no-results", { q }) : t("alight-catalog-empty"),
-      )}</p></div>`;
-      return;
-    }
-
-    let html = "";
-    groups.forEach(([title, items]) => {
-      if (items.length === 0) return;
-      html += `<div class="alight-group-title"><span>${esc(title)}</span><span class="alight-group-count">${items.length}</span></div>`;
-      items.slice(0, MAX_ROWS).forEach((item) => {
-        const size = formatFileSize(item.size);
-        html += `
-          <div class="alight-row">
-            <div class="alight-row-info">
-              <span class="alight-row-name" title="${esc(item.name)}">${esc(item.name)}</span>
-              ${size ? `<span class="alight-row-meta">${esc(size)}</span>` : ""}
-            </div>
-            <button type="button" class="tool-btn-secondary alight-dl-btn" data-name="${esc(item.name)}">
-              <span>${esc(t("alight-download"))}</span>
-            </button>
-          </div>`;
-      });
-      if (items.length > MAX_ROWS) {
-        html += `<p class="alight-more-note">${esc(t("alight-showing-more", { max: MAX_ROWS, total: items.length }))}</p>`;
-      }
-    });
-    catalogList.innerHTML = html;
-  }
-
-  let searchTimer = null;
-  searchInput?.addEventListener("input", () => {
-    clearTimeout(searchTimer);
-    searchTimer = setTimeout(renderCatalog, 200);
-  });
-
-  catalogList?.addEventListener("click", async (e) => {
-    const btn = e.target.closest?.(".alight-dl-btn");
-    if (!btn) return;
-    const name = btn.getAttribute("data-name");
-    if (!name) return;
-    triggerHaptic("medium");
-    btn.disabled = true;
-    const label = btn.querySelector("span");
-    const prev = label?.textContent;
-    if (label) label.textContent = "...";
-    try {
-      const blob = await downloadAlightFile(name);
-      const safeName = name.replace(/[^\w.\- ]/g, "_");
-      await saveBlobToFetz(blob, safeName, "Download/Fetz/Alight", {
-        title: name,
-        tool: "alight-presets",
-      });
-    } catch (err) {
-      showToast(err.message || t("alight-failed-download"));
-    } finally {
-      btn.disabled = false;
-      if (label) label.textContent = prev || t("alight-download");
-    }
-  });
-
-  setupAlightXmlPanel("alightLink", resolveAlightLink, true);
-  setupAlightXmlPanel("alightDrive", fetchAlightDrivePreset, false);
-
-  toolCleanups.push(() => {
-    ["alightLinkResult", "alightDriveResult"].forEach(
-      (id) => {
-        const el = document.getElementById(id);
-        if (el) {
-          pauseAllMedia(el);
-          el.innerHTML = "";
-        }
-      },
-    );
-  });
-}
-
-function setupAlightXmlPanel(prefix, fetchFn, supportsProjects) {
-  const input = document.getElementById(`${prefix}Input`);
-  const pasteBtn = document.getElementById(`${prefix}PasteBtn`);
-  const runBtn = document.getElementById(`${prefix}RunBtn`);
-  const loader = document.getElementById(`${prefix}Loader`);
-  const result = document.getElementById(`${prefix}Result`);
+  const input = document.getElementById("alightTiktokInput");
+  const pasteBtn = document.getElementById("alightTiktokPasteBtn");
+  const runBtn = document.getElementById("alightTiktokRunBtn");
+  const loader = document.getElementById("alightTiktokLoader");
+  const result = document.getElementById("alightTiktokResult");
 
   bindPasteButton(input, pasteBtn);
 
-  async function run(project) {
+  async function run() {
     const url = input?.value?.trim();
     if (!url) {
       showToast(t("toast-no-link") || "Please enter a valid link");
@@ -1907,107 +1759,112 @@ function setupAlightXmlPanel(prefix, fetchFn, supportsProjects) {
     triggerHaptic("medium");
     runBtn.disabled = true;
     loader?.classList.remove("hidden");
-    if (!project && result) result.innerHTML = "";
-
+    if (result) result.innerHTML = "";
     try {
-      const data = supportsProjects
-        ? await fetchFn(url, project)
-        : await fetchFn(url);
-      render(data, project || "");
+      render(await findPresetsFromTiktok(url));
     } catch (err) {
-      if (result) result.innerHTML = errorCardHtml(err.message || t("alight-failed-fetch"));
+      if (result) result.innerHTML = errorCardHtml(err.message || t("alight-failed-find"));
     } finally {
       runBtn.disabled = false;
       loader?.classList.add("hidden");
     }
   }
 
-  runBtn?.addEventListener("click", () => run());
+  runBtn?.addEventListener("click", run);
   input?.addEventListener("keydown", (e) => {
     if (e.key === "Enter") run();
   });
 
-  function render(data, selectedProject) {
+  function render(data) {
     if (!result) return;
-    const m = data.metadata;
-    const media = m ? m.mediaList.length || data.mediaCount : data.mediaCount;
-    const facts = m
-      ? [
-          [t("alight-fact-resolution"), `${m.width} × ${m.height}`],
-          [t("alight-fact-export"), `${m.exportWidth} × ${m.exportHeight}`],
-          [t("alight-fact-fps"), String(m.fps)],
-          [t("alight-fact-duration"), m.durationFormatted],
-          [t("alight-fact-beats"), String(m.bookmarksCount)],
-          [t("alight-fact-media"), String(media)],
-        ]
-      : [];
+    const v = data.video;
+    const a = data.author;
+    const num = (n) => (n === null || n === undefined ? "-" : Number(n).toLocaleString());
+    const facts = [
+      ["Views", num(v.views)],
+      ["Likes", num(v.likes)],
+      ["Comments", num(v.comments)],
+      ["Shares", num(v.shares)],
+    ];
 
-    const projectChips =
-      data.availableProjects.length > 1
-        ? `<div class="tool-chip-group alight-project-chips" style="margin-bottom:12px">${data.availableProjects
-            .map(
-              (name) =>
-                `<button type="button" class="tool-chip${name === selectedProject ? " active" : ""}" data-project="${esc(name)}">${esc(name)}</button>`,
-            )
-            .join("")}</div>`
-        : "";
-
-    result.innerHTML = `
-      ${projectChips}
+    const head = `
       <div class="tool-result-card">
-        <h4 class="alight-result-title">${esc(m?.title ?? data.name)}</h4>
-        <p class="alight-result-file">${esc(data.name)}</p>
+        <h4 class="alight-result-title">${esc(a.nickname || "@" + a.uniqueId)}</h4>
+        <p class="alight-result-file">@${esc(a.uniqueId)}</p>
+        ${v.description ? `<p class="alight-result-file">${esc(v.description.slice(0, 160))}</p>` : ""}
+        <div class="tiktok-meta-list">${facts
+          .map(([k, val]) => `<div class="tiktok-meta-item"><span class="tiktok-meta-key">${esc(k)}</span><span class="tiktok-meta-val">${esc(val)}</span></div>`)
+          .join("")}</div>
         ${
-          facts.length
-            ? `<div class="tiktok-meta-list">${facts
-                .map(
-                  ([k, v]) =>
-                    `<div class="tiktok-meta-item"><span class="tiktok-meta-key">${esc(k)}</span><span class="tiktok-meta-val">${esc(v)}</span></div>`,
-                )
-                .join("")}</div>`
+          v.src
+            ? `<video class="alight-audio" controls playsinline preload="none" ${v.cover ? `poster="${esc(v.cover)}"` : ""} src="${esc(v.src)}"></video>
+        <div class="alight-result-actions">
+          <a class="tool-btn-secondary" href="${esc(v.src)}" target="_blank" rel="noopener" style="text-decoration:none"><span>${esc(t("alight-video-link", { from: v.srcFrom }))}</span></a>
+          <button type="button" class="tool-btn-secondary alight-copy-video"><span>${esc(t("alight-copy-link"))}</span></button>
+        </div>`
             : ""
         }
-        <div class="alight-result-actions">
-          <button type="button" class="tool-btn-primary alight-save-xml" ${data.xml ? "" : "disabled"}>
-            <span>${esc(t("alight-save-xml"))}</span>
-          </button>
-          <button type="button" class="tool-btn-secondary alight-copy-xml" ${data.xml ? "" : "disabled"}>
-            <span>${esc(t("alight-copy-xml"))}</span>
-          </button>
-        </div>
-      </div>
-    `;
+        <p class="alight-more-note">${esc(t("alight-scanned", { comments: data.scanned.comments, replies: data.scanned.replies }))}</p>
+      </div>`;
 
-    result.querySelectorAll("[data-project]").forEach((chip) => {
-      chip.addEventListener("click", () => {
+    if (!data.presets.length) {
+      result.innerHTML = head + `<div class="tool-empty-box"><p>${esc(t("alight-no-presets"))}</p></div>`;
+      result.querySelector(".alight-copy-video")?.addEventListener("click", () => {
+        navigator.clipboard.writeText(v.src);
+        showToast(t("alight-link-copied"));
+      });
+      return;
+    }
+
+    const rows = data.presets
+      .map((p, i) => {
+        const src = ALIGHT_SOURCE_KEYS[p.source] ? t(ALIGHT_SOURCE_KEYS[p.source]) : p.source;
+        const meta = [p.type === "5mb" ? t("alight-type-5mb") : t("alight-type-xml"), src, p.detail, p.byAuthor ? t("alight-by-author") : "", p.pinned ? t("alight-pinned") : ""]
+          .filter(Boolean)
+          .join(" · ");
+        return `
+          <div class="alight-row">
+            <div class="alight-row-info">
+              <span class="alight-row-name" title="${esc(p.title || p.url)}">${esc(p.title || p.url)}</span>
+              <span class="alight-row-meta">${esc(meta)}</span>
+            </div>
+            <div class="alight-result-actions" style="margin-top:0">
+              <a class="tool-btn-secondary" href="${esc(p.url)}" target="_blank" rel="noopener" style="text-decoration:none"><span>${esc(t("alight-open"))}</span></a>
+              <button type="button" class="tool-btn-secondary alight-copy-link" data-i="${i}"><span>${esc(t("alight-copy-link"))}</span></button>
+            </div>
+          </div>`;
+      })
+      .join("");
+
+    result.innerHTML =
+      head +
+      `<div class="alight-group-title"><span>${esc(t("alight-group-presets"))}</span><span class="alight-group-count">${data.presets.length}</span></div>` +
+      rows;
+
+    result.querySelector(".alight-copy-video")?.addEventListener("click", () => {
+      triggerHaptic("light");
+      navigator.clipboard.writeText(v.src);
+      showToast(t("alight-link-copied"));
+    });
+
+    result.querySelectorAll(".alight-copy-link").forEach((btn) => {
+      btn.addEventListener("click", () => {
         triggerHaptic("light");
-        run(chip.getAttribute("data-project"));
+        const p = data.presets[Number(btn.getAttribute("data-i"))];
+        if (p) {
+          navigator.clipboard.writeText(p.url);
+          showToast(t("alight-link-copied"));
+        }
       });
     });
-
-    result.querySelector(".alight-save-xml")?.addEventListener("click", async (e) => {
-      triggerHaptic("medium");
-      const btn = e.currentTarget;
-      btn.disabled = true;
-      const fileName = (data.name || "preset").replace(/[^\w.\- ]/g, "_");
-      const finalName = fileName.toLowerCase().endsWith(".xml")
-        ? fileName
-        : `${fileName}.xml`;
-      await saveBlobToFetz(
-        new Blob([data.xml], { type: "application/xml" }),
-        finalName,
-        "Download/Fetz/Alight",
-        { title: m?.title ?? data.name, tool: "alight-presets" },
-      );
-      btn.disabled = false;
-    });
-
-    result.querySelector(".alight-copy-xml")?.addEventListener("click", () => {
-      triggerHaptic("light");
-      navigator.clipboard.writeText(data.xml);
-      showToast(t("alight-xml-copied"));
-    });
   }
+
+  toolCleanups.push(() => {
+    if (result) {
+      pauseAllMedia(result);
+      result.innerHTML = "";
+    }
+  });
 }
 
 // -------------------------------------------------------------
