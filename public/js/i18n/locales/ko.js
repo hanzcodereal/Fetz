@@ -324,7 +324,7 @@ export default {
   "tool-wachannel-subtitle": "채널 링크로 정보 가져오기",
   "tool-alight-desc": "TikTok 영상 링크에서 Alight Motion 프리셋 링크(5mb 및 XML)를 찾습니다",
   "tool-alight-subtitle": "TikTok 링크로 프리셋 찾기",
-  "placeholder-alight-tiktok": "https://www.tiktok.com/@user/video/...",
+  "placeholder-alight-tiktok": "https://vt.tiktok.com/xxxx",
   "btn-alight-find": "프리셋 찾기",
   "alight-loading-find": "설명, 프로필, 댓글 스캔 중...",
   "alight-failed-find": "프리셋을 찾지 못했습니다",
