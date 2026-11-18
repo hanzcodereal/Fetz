@@ -2,7 +2,7 @@
 import { translations, getInitialLanguage } from "../i18n/index.js";
 import { Filesystem } from "../utils/index.js";
 
-export const APP_VERSION = "1.0.0";
+export const APP_VERSION = "2.0.0";
 export const GITHUB_REPO = "";
 export const UPDATE_CHECK_URL = "";
 export const REPO_URL = "https://saweria.co/hanzreally";
