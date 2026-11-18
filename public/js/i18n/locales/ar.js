@@ -324,7 +324,7 @@ export default {
   "tool-wachannel-subtitle": "احصل على معلومات القناة من رابطها",
   "tool-alight-desc": "ابحث عن روابط إعدادات Alight Motion المسبقة (5mb وXML) من رابط فيديو تيك توك",
   "tool-alight-subtitle": "البحث عن الإعدادات المسبقة عبر رابط تيك توك",
-  "placeholder-alight-tiktok": "https://www.tiktok.com/@user/video/...",
+  "placeholder-alight-tiktok": "https://vt.tiktok.com/xxxx",
   "btn-alight-find": "ابحث عن الإعدادات",
   "alight-loading-find": "جارٍ فحص الوصف والملف الشخصي والتعليقات...",
   "alight-failed-find": "تعذر العثور على الإعدادات",
