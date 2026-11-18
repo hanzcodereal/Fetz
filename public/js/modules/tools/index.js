@@ -21,6 +21,13 @@ import {
   toDomainLabel,
 } from "./usernameChecker.js";
 import { saveBlobToFetz } from "./storageHelper.js";
+import {
+  listAlightCatalog,
+  resolveAlightLink,
+  fetchAlightDrivePreset,
+  downloadAlightFile,
+} from "./alightPresets.js";
+import { scrapeWhatsAppChannel } from "./waChannel.js";
 
 let activeToolSubView = null;
 const toolCleanups = [];
@@ -163,6 +170,8 @@ export function initTools() {
   initExtractorController();
   initPdfCompressorController();
   initUsernameCheckerController();
+  initAlightController();
+  initWaChannelController();
 }
 
 function capitalize(s) {
@@ -1694,5 +1703,451 @@ function initUsernameCheckerController() {
       runBtn.disabled = false;
       runBtn.innerHTML = `<span>${t("btn-check-username") || "Check Availability"}</span>`;
     }
+  });
+}
+
+
+// -------------------------------------------------------------
+// 9. Alight Presets Controller
+// -------------------------------------------------------------
+function errorCardHtml(message) {
+  return `
+    <div class="tool-error-card">
+      <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+      <p>${esc(message)}</p>
+    </div>
+  `;
+}
+
+function formatFileSize(size) {
+  if (size === undefined || size === null || size === "") return "";
+  if (typeof size === "string") return size;
+  return formatBytes(size);
+}
+
+function bindPasteButton(input, pasteBtn) {
+  pasteBtn?.addEventListener("click", async () => {
+    triggerHaptic("light");
+    const text = await readTextFromClipboard();
+    if (text && input) {
+      input.value = text.trim();
+      input.focus();
+    } else {
+      showToast(t("toast-clipboard-empty") || "Clipboard is empty");
+    }
+  });
+}
+
+function initAlightController() {
+  const chips = document.querySelectorAll("#alightTabChips .tool-chip");
+  const panels = {
+    catalog: document.getElementById("alightPanelCatalog"),
+    link: document.getElementById("alightPanelLink"),
+    drive: document.getElementById("alightPanelDrive"),
+  };
+  const searchInput = document.getElementById("alightSearchInput");
+  const catalogLoader = document.getElementById("alightCatalogLoader");
+  const catalogList = document.getElementById("alightCatalogList");
+
+  let catalog = null;
+  let catalogLoading = false;
+  const MAX_ROWS = 150;
+
+  function switchTab(tab) {
+    chips.forEach((c) =>
+      c.classList.toggle("active", c.getAttribute("data-tab") === tab),
+    );
+    Object.entries(panels).forEach(([key, el]) =>
+      el?.classList.toggle("hidden", key !== tab),
+    );
+    if (tab === "catalog" && !catalog) loadCatalog();
+  }
+
+  chips.forEach((chip) => {
+    chip.addEventListener("click", () => {
+      triggerHaptic("light");
+      switchTab(chip.getAttribute("data-tab") || "catalog");
+    });
+  });
+
+  document
+    .querySelector('.tool-card[data-tool="alight"]')
+    ?.addEventListener("click", () => {
+      if (!catalog) loadCatalog();
+    });
+
+  async function loadCatalog() {
+    if (catalogLoading) return;
+    catalogLoading = true;
+    catalogLoader?.classList.remove("hidden");
+    if (catalogList) catalogList.innerHTML = "";
+    try {
+      catalog = await listAlightCatalog();
+      renderCatalog();
+    } catch (err) {
+      catalog = null;
+      if (catalogList) {
+        catalogList.innerHTML =
+          errorCardHtml(err.message || t("alight-failed-catalog")) +
+          `<button type="button" id="alightRetryBtn" class="tool-btn-secondary" style="margin-top:10px">${esc(t("alight-retry"))}</button>`;
+        document
+          .getElementById("alightRetryBtn")
+          ?.addEventListener("click", loadCatalog);
+      }
+    } finally {
+      catalogLoading = false;
+      catalogLoader?.classList.add("hidden");
+    }
+  }
+
+  function renderCatalog() {
+    if (!catalog || !catalogList) return;
+    const q = (searchInput?.value || "").trim().toLowerCase();
+    const filter = (items) =>
+      q ? items.filter((i) => i.name.toLowerCase().includes(q)) : items;
+    const groups = [
+      [t("alight-group-presets"), filter(catalog.presets)],
+      [t("alight-group-audio"), filter(catalog.audio)],
+      [t("alight-group-images"), filter(catalog.images)],
+    ];
+
+    if (groups.every(([, items]) => items.length === 0)) {
+      catalogList.innerHTML = `<div class="tool-empty-box"><p>${esc(
+        q ? t("alight-no-results", { q }) : t("alight-catalog-empty"),
+      )}</p></div>`;
+      return;
+    }
+
+    let html = "";
+    groups.forEach(([title, items]) => {
+      if (items.length === 0) return;
+      html += `<div class="alight-group-title"><span>${esc(title)}</span><span class="alight-group-count">${items.length}</span></div>`;
+      items.slice(0, MAX_ROWS).forEach((item) => {
+        const size = formatFileSize(item.size);
+        html += `
+          <div class="alight-row">
+            <div class="alight-row-info">
+              <span class="alight-row-name" title="${esc(item.name)}">${esc(item.name)}</span>
+              ${size ? `<span class="alight-row-meta">${esc(size)}</span>` : ""}
+            </div>
+            <button type="button" class="tool-btn-secondary alight-dl-btn" data-name="${esc(item.name)}">
+              <span>${esc(t("alight-download"))}</span>
+            </button>
+          </div>`;
+      });
+      if (items.length > MAX_ROWS) {
+        html += `<p class="alight-more-note">${esc(t("alight-showing-more", { max: MAX_ROWS, total: items.length }))}</p>`;
+      }
+    });
+    catalogList.innerHTML = html;
+  }
+
+  let searchTimer = null;
+  searchInput?.addEventListener("input", () => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(renderCatalog, 200);
+  });
+
+  catalogList?.addEventListener("click", async (e) => {
+    const btn = e.target.closest?.(".alight-dl-btn");
+    if (!btn) return;
+    const name = btn.getAttribute("data-name");
+    if (!name) return;
+    triggerHaptic("medium");
+    btn.disabled = true;
+    const label = btn.querySelector("span");
+    const prev = label?.textContent;
+    if (label) label.textContent = "...";
+    try {
+      const blob = await downloadAlightFile(name);
+      const safeName = name.replace(/[^\w.\- ]/g, "_");
+      await saveBlobToFetz(blob, safeName, "Download/Fetz/Alight", {
+        title: name,
+        tool: "alight-presets",
+      });
+    } catch (err) {
+      showToast(err.message || t("alight-failed-download"));
+    } finally {
+      btn.disabled = false;
+      if (label) label.textContent = prev || t("alight-download");
+    }
+  });
+
+  setupAlightXmlPanel("alightLink", resolveAlightLink, true);
+  setupAlightXmlPanel("alightDrive", fetchAlightDrivePreset, false);
+
+  toolCleanups.push(() => {
+    ["alightLinkResult", "alightDriveResult"].forEach(
+      (id) => {
+        const el = document.getElementById(id);
+        if (el) {
+          pauseAllMedia(el);
+          el.innerHTML = "";
+        }
+      },
+    );
+  });
+}
+
+function setupAlightXmlPanel(prefix, fetchFn, supportsProjects) {
+  const input = document.getElementById(`${prefix}Input`);
+  const pasteBtn = document.getElementById(`${prefix}PasteBtn`);
+  const runBtn = document.getElementById(`${prefix}RunBtn`);
+  const loader = document.getElementById(`${prefix}Loader`);
+  const result = document.getElementById(`${prefix}Result`);
+
+  bindPasteButton(input, pasteBtn);
+
+  async function run(project) {
+    const url = input?.value?.trim();
+    if (!url) {
+      showToast(t("toast-no-link") || "Please enter a valid link");
+      return;
+    }
+    triggerHaptic("medium");
+    runBtn.disabled = true;
+    loader?.classList.remove("hidden");
+    if (!project && result) result.innerHTML = "";
+
+    try {
+      const data = supportsProjects
+        ? await fetchFn(url, project)
+        : await fetchFn(url);
+      render(data, project || "");
+    } catch (err) {
+      if (result) result.innerHTML = errorCardHtml(err.message || t("alight-failed-fetch"));
+    } finally {
+      runBtn.disabled = false;
+      loader?.classList.add("hidden");
+    }
+  }
+
+  runBtn?.addEventListener("click", () => run());
+  input?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") run();
+  });
+
+  function render(data, selectedProject) {
+    if (!result) return;
+    const m = data.metadata;
+    const media = m ? m.mediaList.length || data.mediaCount : data.mediaCount;
+    const facts = m
+      ? [
+          [t("alight-fact-resolution"), `${m.width} × ${m.height}`],
+          [t("alight-fact-export"), `${m.exportWidth} × ${m.exportHeight}`],
+          [t("alight-fact-fps"), String(m.fps)],
+          [t("alight-fact-duration"), m.durationFormatted],
+          [t("alight-fact-beats"), String(m.bookmarksCount)],
+          [t("alight-fact-media"), String(media)],
+        ]
+      : [];
+
+    const projectChips =
+      data.availableProjects.length > 1
+        ? `<div class="tool-chip-group alight-project-chips" style="margin-bottom:12px">${data.availableProjects
+            .map(
+              (name) =>
+                `<button type="button" class="tool-chip${name === selectedProject ? " active" : ""}" data-project="${esc(name)}">${esc(name)}</button>`,
+            )
+            .join("")}</div>`
+        : "";
+
+    result.innerHTML = `
+      ${projectChips}
+      <div class="tool-result-card">
+        <h4 class="alight-result-title">${esc(m?.title ?? data.name)}</h4>
+        <p class="alight-result-file">${esc(data.name)}</p>
+        ${
+          facts.length
+            ? `<div class="tiktok-meta-list">${facts
+                .map(
+                  ([k, v]) =>
+                    `<div class="tiktok-meta-item"><span class="tiktok-meta-key">${esc(k)}</span><span class="tiktok-meta-val">${esc(v)}</span></div>`,
+                )
+                .join("")}</div>`
+            : ""
+        }
+        <div class="alight-result-actions">
+          <button type="button" class="tool-btn-primary alight-save-xml" ${data.xml ? "" : "disabled"}>
+            <span>${esc(t("alight-save-xml"))}</span>
+          </button>
+          <button type="button" class="tool-btn-secondary alight-copy-xml" ${data.xml ? "" : "disabled"}>
+            <span>${esc(t("alight-copy-xml"))}</span>
+          </button>
+        </div>
+      </div>
+    `;
+
+    result.querySelectorAll("[data-project]").forEach((chip) => {
+      chip.addEventListener("click", () => {
+        triggerHaptic("light");
+        run(chip.getAttribute("data-project"));
+      });
+    });
+
+    result.querySelector(".alight-save-xml")?.addEventListener("click", async (e) => {
+      triggerHaptic("medium");
+      const btn = e.currentTarget;
+      btn.disabled = true;
+      const fileName = (data.name || "preset").replace(/[^\w.\- ]/g, "_");
+      const finalName = fileName.toLowerCase().endsWith(".xml")
+        ? fileName
+        : `${fileName}.xml`;
+      await saveBlobToFetz(
+        new Blob([data.xml], { type: "application/xml" }),
+        finalName,
+        "Download/Fetz/Alight",
+        { title: m?.title ?? data.name, tool: "alight-presets" },
+      );
+      btn.disabled = false;
+    });
+
+    result.querySelector(".alight-copy-xml")?.addEventListener("click", () => {
+      triggerHaptic("light");
+      navigator.clipboard.writeText(data.xml);
+      showToast(t("alight-xml-copied"));
+    });
+  }
+}
+
+// -------------------------------------------------------------
+// 10. WhatsApp Channel Info Controller
+// -------------------------------------------------------------
+function initWaChannelController() {
+  const input = document.getElementById("waChannelInput");
+  const pasteBtn = document.getElementById("waChannelPasteBtn");
+  const runBtn = document.getElementById("waChannelRunBtn");
+  const loader = document.getElementById("waChannelLoader");
+  const result = document.getElementById("waChannelResult");
+
+  bindPasteButton(input, pasteBtn);
+
+  async function run() {
+    const url = input?.value?.trim();
+    if (!url) {
+      showToast(t("toast-no-link") || "Please enter a valid channel link");
+      return;
+    }
+    triggerHaptic("medium");
+    runBtn.disabled = true;
+    loader?.classList.remove("hidden");
+    if (result) result.innerHTML = "";
+
+    try {
+      const d = await scrapeWhatsAppChannel(url);
+      render(d);
+      showToast(t("wachannel-success"));
+    } catch (err) {
+      if (result) result.innerHTML = errorCardHtml(err.message || t("wachannel-failed"));
+    } finally {
+      runBtn.disabled = false;
+      loader?.classList.add("hidden");
+    }
+  }
+
+  runBtn?.addEventListener("click", run);
+  input?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") run();
+  });
+
+  function render(d) {
+    if (!result) return;
+    result.innerHTML = `
+      <div class="tool-result-card tiktok-profile-card">
+        <div class="tiktok-header-row">
+          <div class="tiktok-avatar-wrap">
+            ${d.avatar ? `<img src="${esc(d.avatar)}" alt="${esc(d.name || "")}" class="tiktok-avatar" referrerpolicy="no-referrer" />` : ""}
+            ${
+              d.avatar
+                ? `<button id="waChannelAvatarDlBtn" class="tiktok-avatar-dl-btn" title="Download Avatar">
+                    <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM17 13l-5 5-5-5h3V9h4v4h3z"/></svg>
+                  </button>`
+                : ""
+            }
+          </div>
+          <div class="tiktok-names-wrap">
+            <h3 class="tiktok-display-name">${esc(d.name || "-")}</h3>
+            <p class="tiktok-username">WhatsApp Channel</p>
+          </div>
+        </div>
+
+        ${d.bio ? `<p class="tiktok-bio">${esc(d.bio)}</p>` : ""}
+
+        <div class="tiktok-stats-grid">
+          <div class="tiktok-stat-box">
+            <span class="tiktok-stat-val">${formatNumber(d.followers)}</span>
+            <span class="tiktok-stat-lbl">${esc(t("wachannel-followers"))}</span>
+          </div>
+        </div>
+
+        <div class="tiktok-meta-list">
+          <div class="tiktok-meta-item">
+            <span class="tiktok-meta-key">${esc(t("wachannel-id"))}</span>
+            <div class="tiktok-copyable-val">
+              <span>${esc(d.channelId)}</span>
+              <button class="tiktok-copy-small-btn" data-copy="${esc(d.channelId)}" title="Copy ID">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+              </button>
+            </div>
+          </div>
+          <div class="tiktok-meta-item">
+            <span class="tiktok-meta-key">${esc(t("wachannel-link"))}</span>
+            <div class="tiktok-copyable-val">
+              <span class="truncate-secuid">${esc(d.channelUrl.replace(/^https?:\/\//, "").slice(0, 28))}...</span>
+              <button class="tiktok-copy-small-btn" data-copy="${esc(d.channelUrl)}" title="Copy Link">
+                <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="tiktok-footer-actions">
+          <a href="${esc(d.channelUrl)}" target="_blank" rel="noopener noreferrer" class="tool-btn-secondary">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg>
+            <span>${esc(t("wachannel-open"))}</span>
+          </a>
+        </div>
+      </div>
+    `;
+
+    document
+      .getElementById("waChannelAvatarDlBtn")
+      ?.addEventListener("click", async (e) => {
+        triggerHaptic("medium");
+        const btn = e.currentTarget;
+        btn.style.opacity = "0.5";
+        btn.style.pointerEvents = "none";
+        showToast("Downloading avatar...");
+        await startNativeDownload(
+          d.avatar,
+          "JPG",
+          `${d.name || "WhatsApp Channel"} (Avatar)`,
+          null,
+          d.avatar,
+          true,
+          {
+            thumbnail: d.avatar,
+            type: "IMAGE",
+            title: `${d.name || "WhatsApp Channel"} (Avatar)`,
+          },
+        );
+        btn.style.opacity = "";
+        btn.style.pointerEvents = "";
+      });
+
+    result.querySelectorAll(".tiktok-copy-small-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        triggerHaptic("light");
+        const val = btn.getAttribute("data-copy");
+        if (val) {
+          navigator.clipboard.writeText(val);
+          showToast("Copied to clipboard");
+        }
+      });
+    });
+  }
+
+  toolCleanups.push(() => {
+    if (result) result.innerHTML = "";
   });
 }
