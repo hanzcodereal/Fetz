@@ -1779,40 +1779,28 @@ function initAlightController() {
     if (!result) return;
     const v = data.video;
     const a = data.author;
-    const num = (n) => (n === null || n === undefined ? "-" : Number(n).toLocaleString());
-    const facts = [
-      ["Views", num(v.views)],
-      ["Likes", num(v.likes)],
-      ["Comments", num(v.comments)],
-      ["Shares", num(v.shares)],
-    ];
+    const handle = a.uniqueId ? "@" + a.uniqueId : "";
+    const nick = a.nickname && a.nickname !== a.uniqueId && a.nickname !== handle ? a.nickname : "";
+    const avatar = a.avatar
+      ? `<img src="${esc(a.avatar)}" alt="" referrerpolicy="no-referrer" style="width:48px;height:48px;border-radius:50%;object-fit:cover;flex-shrink:0" />`
+      : "";
 
     const head = `
       <div class="tool-result-card">
-        <h4 class="alight-result-title">${esc(a.nickname || "@" + a.uniqueId)}</h4>
-        <p class="alight-result-file">@${esc(a.uniqueId)}</p>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+          ${avatar}
+          <div style="min-width:0">
+            <h4 class="alight-result-title">${esc(nick || handle)}</h4>
+            ${nick && handle ? `<p class="alight-result-file" style="margin:0">${esc(handle)}</p>` : ""}
+          </div>
+        </div>
         ${v.description ? `<p class="alight-result-file">${esc(v.description.slice(0, 160))}</p>` : ""}
-        <div class="tiktok-meta-list">${facts
-          .map(([k, val]) => `<div class="tiktok-meta-item"><span class="tiktok-meta-key">${esc(k)}</span><span class="tiktok-meta-val">${esc(val)}</span></div>`)
-          .join("")}</div>
-        ${
-          v.src
-            ? `<video class="alight-audio" controls playsinline preload="none" ${v.cover ? `poster="${esc(v.cover)}"` : ""} src="${esc(v.src)}"></video>
-        <div class="alight-result-actions">
-          <a class="tool-btn-secondary" href="${esc(v.src)}" target="_blank" rel="noopener" style="text-decoration:none"><span>${esc(t("alight-video-link", { from: v.srcFrom }))}</span></a>
-          <button type="button" class="tool-btn-secondary alight-copy-video"><span>${esc(t("alight-copy-link"))}</span></button>
-        </div>`
-            : ""
-        }
+        ${v.src ? `<video class="alight-audio" controls playsinline preload="none" ${v.cover ? `poster="${esc(v.cover)}"` : ""} src="${esc(v.src)}"></video>` : ""}
         <p class="alight-more-note">${esc(t("alight-scanned", { comments: data.scanned.comments, replies: data.scanned.replies }))}</p>
       </div>`;
 
     if (!data.presets.length) {
       result.innerHTML = head + `<div class="tool-empty-box"><p>${esc(t("alight-no-presets"))}</p></div>`;
-      result.querySelector(".alight-copy-video")?.addEventListener("click", () => {
-        navigator.clipboard.writeText(v.src);
-        showToast(t("alight-link-copied"));
-      });
       return;
     }
 
@@ -1840,12 +1828,6 @@ function initAlightController() {
       head +
       `<div class="alight-group-title"><span>${esc(t("alight-group-presets"))}</span><span class="alight-group-count">${data.presets.length}</span></div>` +
       rows;
-
-    result.querySelector(".alight-copy-video")?.addEventListener("click", () => {
-      triggerHaptic("light");
-      navigator.clipboard.writeText(v.src);
-      showToast(t("alight-link-copied"));
-    });
 
     result.querySelectorAll(".alight-copy-link").forEach((btn) => {
       btn.addEventListener("click", () => {
