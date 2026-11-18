@@ -324,7 +324,7 @@ export default {
   "tool-wachannel-subtitle": "Kumuha ng info ng channel mula sa link nito",
   "tool-alight-desc": "Maghanap ng mga link ng Alight Motion preset (5mb at XML) mula sa link ng TikTok video",
   "tool-alight-subtitle": "Maghanap ng preset gamit ang TikTok link",
-  "placeholder-alight-tiktok": "https://www.tiktok.com/@user/video/...",
+  "placeholder-alight-tiktok": "https://vt.tiktok.com/xxxx",
   "btn-alight-find": "Hanapin ang Presets",
   "alight-loading-find": "Sine-scan ang description, bio at mga comment...",
   "alight-failed-find": "Hindi nahanap ang mga preset",
